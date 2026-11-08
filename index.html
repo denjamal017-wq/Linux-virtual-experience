@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux Lab | Sajad Mushtaq</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+ --bg:#0b1020;
+ --panel:#121a2d;
+ --line:#283653;
+ --text:#edf3ff;
+ --muted:#9aa9c4;
+ --cyan:#54d6d0;
+ --gold:#f4c66a;
+ --green:#7ce0a3;
+ --red:#ff7185;
+}
+*{box-sizing:border-box}
+body{
+ margin:0;background:var(--bg);color:var(--text);
+ font-family:Tajawal,sans-serif;
+}
+header{
+ padding:22px;text-align:center;
+ background:#111a2b;border-bottom:1px solid var(--line);
+}
+header h1{margin:0;color:var(--cyan)}
+header p{color:var(--muted);margin:5px}
+main{max-width:1150px;margin:25px auto;padding:15px}
+.layout{display:grid;grid-template-columns:1fr 320px;gap:15px}
+.panel{
+ background:var(--panel);border:1px solid var(--line);
+ padding:18px;border-radius:15px;margin-bottom:15px;
+}
+h2{font-size:18px;color:var(--cyan)}
+input,button{
+ padding:11px;border-radius:8px;border:1px solid var(--line);
+}
+input{background:#0b1425;color:white;max-width:100%}
+button{background:var(--cyan);color:#07151b;cursor:pointer;font-weight:bold}
+button:hover{opacity:.8}
+.terminal{background:#060b15;border-radius:12px;overflow:hidden}
+.termhead{padding:10px;background:#17223a;color:var(--green)}
+#output{
+ height:230px;overflow:auto;padding:15px;
+ direction:ltr;text-align:left;white-space:pre-wrap;
+ font:13px/1.8 'Fira Code',monospace;color:#d9e5f7
+}
+.inputrow{display:flex;gap:7px;padding:10px}
+.inputrow input{flex:1;width:70%;direction:ltr}
+.quick,.toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.quick button,.toolbar button{background:#24334c;color:white}
+.search{width:100%;margin-bottom:10px}
+.commandlist{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.cmd{
+ background:#19253a;padding:10px;border-radius:8px;
+ cursor:pointer;border:1px solid var(--line)
+}
+.cmd b{color:var(--cyan);font-family:'Fira Code'}
+.cmd small{display:block;color:var(--muted)}
+.files{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.file{background:#19253a;padding:12px;border-radius:10px;cursor:pointer;border:1px solid var(--line)}
+.file.active{border-color:var(--cyan)}
+.file strong{display:block;margin:6px 0}
+.file code{color:var(--gold);font-size:11px}
+.editorgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}
+.field input{width:100%}
+table{width:100%;margin-top:15px;border-collapse:collapse}
+td,th{padding:9px;border-bottom:1px solid var(--line);text-align:center}
+th{color:var(--muted)}
+input[type=checkbox]{accent-color:var(--cyan);width:17px;height:17px}
+.permission{
+ margin-top:12px;padding:13px;background:#091321;
+ border-radius:10px;display:flex;justify-content:space-between
+}
+.permission strong{font:24px 'Fira Code';color:var(--gold)}
+#preview{direction:ltr;text-align:left;color:var(--green);margin-top:10px;font:12px 'Fira Code'}
+.note{background:#192b43;padding:12px;border-radius:8px;color:#cbd8eb;font-size:13px;line-height:1.8;margin-top:12px}
+.hidden{display:none}
+footer{text-align:center;color:var(--muted);padding:25px}
+@media(max-width:800px){
+ .layout{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>Linux Command Lab</h1>
+<p>Command · Permissions · Ownership Simulator</p>
+<p>Designed by Sajad Mushtaq</p>
+</header>
+
+<main>
+<div class="layout">
+
+<section>
+
+<div class="panel">
+<h2>01 - Terminal الطرفية</h2>
+
+<div class="terminal">
+<div class="termhead">student@linux-lab:~</div>
+<div id="output"></div>
+
+<div class="inputrow">
+<input id="terminalInput" placeholder="Enter Linux command">
+<button onclick="execute()">Run</button>
+</div>
+</div>
+
+<div class="quick">
+<button onclick="quick('pwd')">pwd</button>
+<button onclick="quick('ls -l')">ls -l</button>
+<button onclick="quick('help')">help</button>
+<button onclick="quick('mkdir test')">mkdir</button>
+<button onclick="quick('touch file.txt')">touch</button>
+</div>
+
+<div class="note">
+هذه بيئة محاكاة تعليمية، الأوامر تعمل داخل المختبر فقط.
+</div>
+</div>
+
+<div class="panel">
+<h2>02 - File Manager</h2>
+
+<div class="toolbar">
+<button onclick="addFile()">＋ New File</button>
+<button onclick="addFolder()">＋ New Folder</button>
+<button onclick="resetLab()">Reset</button>
+</div>
+
+<div class="files" id="files"></div>
+</div>
+
+<div class="panel">
+<h2>03 - Permission & Ownership</h2>
+
+<div id="empty">اختار ملف حتى تعدّل صلاحياته وملكيته.</div>
+
+<div id="editor" class="hidden">
+
+<div class="editorgrid">
+<div class="field">
+<label>File Name</label>
+<input id="editName">
+</div>
+
+<div class="field">
+<label>Owner</label>
+<input id="owner">
+</div>
+
+<div class="field">
+<label>Group</label>
+<input id="group">
+</div>
+
+<div class="field">
+<label>Octal Permission</label>
+<input id="octal" maxlength="3">
+</div>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>User</th>
+<th>Read</th>
+<th>Write</th>
+<th>Execute</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<th>Owner</th>
+<td><input type="checkbox" id="ur"></td>
+<td><input type="checkbox" id="uw"></td>
+<td><input type="checkbox" id="ux"></td>
+</tr>
+
+<tr>
+<th>Group</th>
+<td><input type="checkbox" id="gr"></td>
+<td><input type="checkbox" id="gw"></td>
+<td><input type="checkbox" id="gx"></td>
+</tr>
+
+<tr>
+<th>Others</th>
+<td><input type="checkbox" id="or"></td>
+<td><input type="checkbox" id="ow"></td>
+<td><input type="checkbox" id="ox"></td>
+</tr>
+</tbody>
+</table>
+
+<div class="permission">
+<span>Current Permission</span>
+<strong id="permValue">644</strong>
+</div>
+
+<div id="preview"></div>
+
+<div class="toolbar">
+<button onclick="saveChanges()">Save Changes</button>
+<button onclick="setPermission(755)">chmod 755</button>
+<button onclick="setPermission(644)">chmod 644</button>
+<button onclick="exampleOwner()">chown Example</button>
+</div>
+
+</div>
+</div>
+
+</section>
+
+<aside>
+
+<div class="panel">
+<h2>04 - Command Search</h2>
+
+<input class="search" id="search"
+placeholder="Search commands..."
+oninput="renderCommands(this.value)">
+
+<div class="commandlist" id="commandList"></div>
+
+<div class="note" id="commandInfo">
+اختار الأمر حتى تشوف شرحه وطريقة استخدامه.
+</div>
+</div>
+
+<div class="panel">
+<h2>05 - Permission Guide</h2>
+
+<div class="permission">
+<span>Read (r)</span><strong>4</strong>
+</div>
+
+<div class="permission">
+<span>Write (w)</span><strong>2</strong>
+</div>
+
+<div class="permission">
+<span>Execute (x)</span><strong>1</strong>
+</div>
+
+<div class="note">
+755 = Owner 7 / Group 5 / Others 5.<br>
+644 = Owner 6 / Group 4 / Others 4.<br>
+700 = Owner 7 / Group 0 / Others 0.<br>
+777 = Full Permissions.
+</div>
+</div>
+
+</aside>
+</div>
+</main>
+
+<footer>
+Linux Lab © 2026<br>
+Designed & Developed by Sajad Mushtaq
+</footer>
+
+<script>
+
+// COMMAND DATABASE
+
+const commands=[
+["pwd","عرض المسار الحالي","pwd"],
+["ls","عرض الملفات","ls -l"],
+["cd","تغيير المجلد","cd Documents"],
+["mkdir","إنشاء مجلد","mkdir folder"],
+["touch","إنشاء ملف","touch file.txt"],
+["cp","نسخ ملف","cp file.txt copy.txt"],
+["mv","نقل أو تغيير اسم","mv old.txt new.txt"],
+["rm","حذف ملف","rm file.txt"],
+["rmdir","حذف مجلد فارغ","rmdir folder"],
+["cat","عرض محتوى ملف","cat file.txt"],
+["nano","تحرير ملف","nano file.txt"],
+["head","عرض بداية الملف","head file.txt"],
+["tail","عرض نهاية الملف","tail file.txt"],
+["chmod","تغيير الصلاحيات","chmod 755 file.txt"],
+["chown","تغيير الملكية","chown ali:users file.txt"],
+["umask","قناع الصلاحيات","umask"],
+["find","البحث عن ملف","find . -name file.txt"],
+["grep","البحث داخل النص","grep hello file.txt"],
+["whoami","معرفة المستخدم","whoami"],
+["clear","مسح الشاشة","clear"],
+["man","دليل الأوامر","man chmod"],
+["echo","طباعة نص","echo Hello"],
+["stat","معلومات الملف","stat file.txt"],
+["file","نوع الملف","file file.txt"],
+["sudo","صلاحيات المدير","sudo command"]
+];
+
+let nodes=[
+{name:"home",type:"dir",parent:"/",owner:"student",group:"users",perm:755,content:""},
+{name:"Documents",type:"dir",parent:"/home",owner:"student",group:"users",perm:755,content:""},
+{name:"file.txt",type:"file",parent:"/home",owner:"student",group:"users",perm:644,content:"Hello Linux!\nWelcome to Linux Lab."},
+{name:"script.sh",type:"file",parent:"/home",owner:"student",group:"users",perm:755,content:"#!/bin/bash\necho Hello"},
+{name:"notes.txt",type:"file",parent:"/home/Documents",owner:"student",group:"users",perm:600,content:"Linux Commands"}
+];
+
+let current="/home";
+let selected=null;
+
+const $=id=>document.getElementById(id);
+
+function print(text){
+let d=document.createElement("div");
+d.textContent=text;
+$("output").appendChild(d);
+$("output").scrollTop=$("output").scrollHeight;
+}
+
+function path(n){
+return n.parent+"/"+n.name;
+}
+
+function children(){
+return nodes.filter(n=>n.parent===current);
+}
+
+function find(name){
+return nodes.find(n=>n.name===name && n.parent===current);
+}
+
+function symbolic(n){
+let p=String(n.perm).padStart(3,"0").split("");
+let chars="";
+p.forEach(v=>{
+v=Number(v);
+chars+=(v&4)?"r":"-";
+chars+=(v&2)?"w":"-";
+chars+=(v&1)?"x":"-";
+});
+return (n.type==="dir"?"d":"-")+chars;
+}
+
+function renderFiles(){
+$("files").innerHTML="";
+
+children().forEach(n=>{
+let div=document.createElement("div");
+div.className="file"+(selected===n?" active":"");
+div.innerHTML=`
+<div>${n.type==="dir"?"📁":"📄"}</div>
+<strong></strong>
+<code></code>`;
+
+div.querySelector("strong").textContent=n.name;
+div.querySelector("code").textContent=
+symbolic(n)+" "+n.perm;
+
+div.onclick=()=>selectFile(n);
+$("files").appendChild(div);
+});
+}
+
+function selectFile(n){
+selected=n;
+$("empty").classList.add("hidden");
+$("editor").classList.remove("hidden");
+
+$("editName").value=n.name;
+$("owner").value=n.owner;
+$("group").value=n.group;
+
+setPermission(n.perm);
+renderFiles();
+}
+
+function permissionBits(number){
+return [!!(number&4),!!(number&2),!!(number&1)];
+}
+
+function setPermission(number){
+let digits=String(number).padStart(3,"0").split("");
+let ids=["u","g","o"];
+
+ids.forEach((id,i)=>{
+permissionBits(Number(digits[i])).forEach((v,j)=>{
+$(id+["r","w","x"][j]).checked=v;
+});
+});
+
+$("octal").value=number;
+updatePreview();
+}
+
+function getPermission(){
+let ids=["u","g","o"];
+
+return Number(ids.map(id=>{
+return (
+($ (id+"r").checked?4:0)+
+($(id+"w").checked?2:0)+
+($(id+"x").checked?1:0)
+);
+}).join(""));
+}
+
+function updatePreview(){
+let p=getPermission();
+$("permValue").textContent=p;
+
+if(selected){
+$("preview").textContent=
+symbolic({...selected,perm:p})+" "+
+$("owner").value+" "+
+$("group").value+" "+
+$("editName").value;
+}
+
+$("octal").value=p;
+}
+
+["ur","uw","ux","gr","gw","gx","or","ow","ox"].forEach(id=>{
+$(id).addEventListener("change",updatePreview);
+});
+
+$("octal").addEventListener("input",()=>{
+let v=$("octal").value;
+if(/^[0-7]{3}$/.test(v)){
+setPermission(Number(v));
+}
+});
+
+["editName","owner","group"].forEach(id=>{
+$(id).addEventListener("input",updatePreview);
+});
+
+function saveChanges(){
+if(!selected)return;
+
+selected.name=$("editName").value.trim();
+selected.owner=$("owner").value.trim();
+selected.group=$("group").value.trim();
+selected.perm=getPermission();
+
+print("$ chmod "+selected.perm+" "+selected.name);
+print("$ chown "+selected.owner+":"+selected.group+" "+selected.name);
+print("Changes saved successfully.");
+
+renderFiles();
+updatePreview();
+}
+
+function exampleOwner(){
+$("owner").value="ali";
+$("group").value="developers";
+updatePreview();
+}
+
+function addFile(){
+let name=prompt("اسم الملف:");
+if(!name)return;
+
+if(find(name))return alert("الاسم موجود");
+
+nodes.push({
+name,type:"file",parent:current,
+owner:"student",group:"users",
+perm:644,content:""
+});
+
+renderFiles();
+}
+
+function addFolder(){
+let name=prompt("اسم المجلد:");
+if(!name)return;
+
+if(find(name))return alert("الاسم موجود");
+
+nodes.push({
+name,type:"dir",parent:current,
+owner:"student",group:"users",
+perm:755,content:""
+});
+
+renderFiles();
+}
+
+function resetLab(){
+location.reload();
+}
+
+// TERMINAL
+
+function quick(command){
+$("terminalInput").value=command;
+execute();
+}
+
+function execute(){
+let raw=$("terminalInput").value.trim();
+if(!raw)return;
+
+$("terminalInput").value="";
+print("student@linux-lab:"+current+"$ "+raw);
+
+let args=raw.match(/(?:[^\s"]+|"[^"]*")+/g)||[];
+let cmd=args[0];
+let name=args[1]?.replace(/"/g,"");
+let target=args[2]?.replace(/"/g,"");
+
+switch(cmd){
+
+case "help":
+print(commands.map(c=>c[0]+" - "+c[1]).join("\n"));
+break;
+
+case "pwd":
+print(current);
+break;
+
+case "whoami":
+print("student");
+break;
+
+case "ls":
+children().forEach(n=>{
+print(args.includes("-l")?
+symbolic(n)+" "+n.owner+" "+n.group+" "+n.perm+" "+n.name:n.name);
+});
+break;
+
+case "mkdir":
+case "touch":
+if(!name){print("حدد الاسم");break;}
+if(find(name)){print("الاسم موجود");break;}
+nodes.push({
+name,type:cmd==="mkdir"?"dir":"file",
+parent:current,owner:"student",
+group:"users",perm:cmd==="mkdir"?755:644,
+content:""
+});
+renderFiles();
+print("Created successfully");
+break;
+
+case "cd":
+if(name===".." ){
+current=current.substring(0,current.lastIndexOf("/"))||"/";
+}else if(!name||name==="~"){
+current="/home";
+}else{
+let n=find(name);
+if(n&&n.type==="dir")current=path(n);
+else print("Directory not found");
+}
+renderFiles();
+break;
+
+case "rm":
+case "rmdir":{
+let n=find(name);
+if(!n){print("File not found");break;}
+if(n.type==="dir"&&nodes.some(x=>x.parent===path(n))){
+print("Directory not empty");break;
+}
+nodes=nodes.filter(x=>x!==n);
+if(selected===n){
+selected=null;
+$("editor").classList.add("hidden");
+$("empty").classList.remove("hidden");
+}
+renderFiles();
+print("Deleted successfully");
+break;
+}
+
+case "cp":{
+let n=find(name);
+if(!n||!target){print("Usage: cp source destination");break;}
+nodes.push({...n,name:target,content:n.content});
+renderFiles();
+print("Copied successfully");
+break;
+}
+
+case "mv":{
+let n=find(name);
+if(!n||!target){print("Usage: mv old new");break;}
+n.name=target;
+renderFiles();
+print("Renamed successfully");
+break;
+}
+
+case "cat":{
+let n=find(name);
+print(n?n.content:"File not found");
+break;
+}
+
+case "nano":{
+let n=find(name);
+if(!n){print("File not found");break;}
+let content=prompt("محتوى الملف:",n.content);
+if(content!==null)n.content=content;
+print("File updated");
+break;
+}
+
+case "chmod":{
+let n=find(target);
+if(!n||!/^[0-7]{3}$/.test(name||"")){
+print("Usage: chmod 755 file");
+break;
+}
+n.perm=Number(name);
+renderFiles();
+if(n===selected)selectFile(n);
+print("Permission changed: "+n.perm);
+break;
+}
+
+case "chown":{
+let n=find(target);
+if(!n){print("File not found");break;}
+let parts=name.split(":");
+n.owner=parts[0]||n.owner;
+n.group=parts[1]||n.group;
+renderFiles();
+if(n===selected)selectFile(n);
+print("Ownership changed");
+break;
+}
+
+case "umask":
+print("0022");
+break;
+
+case "echo":
+print(args.slice(1).join(" "));
+break;
+
+case "clear":
+$("output").innerHTML="";
+break;
+
+case "stat":{
+let n=find(name);
+if(n){
+print("File: "+n.name);
+print("Owner: "+n.owner);
+print("Group: "+n.group);
+print("Permission: "+n.perm);
+print("Access: "+symbolic(n));
+}else print("File not found");
+break;
+}
+
+case "file":{
+let n=find(name);
+print(n?n.type:"File not found");
+break;
+}
+
+case "find":{
+let results=nodes.filter(n=>n.name===name);
+print(results.map(path).join("\n")||"No results");
+break;
+}
+
+case "man":{
+let c=commands.find(x=>x[0]===name);
+print(c?c[2]:"No manual available");
+break;
+}
+
+case "sudo":
+print("Educational simulation only.");
+break;
+
+default:
+print("Command not found. Type help.");
+}
+}
+
+$("terminalInput").addEventListener("keydown",e=>{
+if(e.key==="Enter")execute();
+});
+
+// COMMAND SEARCH
+
+function renderCommands(q=""){
+let list=commands.filter(c=>
+c.join(" ").toLowerCase().includes(q.toLowerCase())
+);
+
+$("commandList").innerHTML="";
+
+list.forEach(c=>{
+let div=document.createElement("div");
+div.className="cmd";
+div.innerHTML="<b></b><small></small>";
+
+div.querySelector("b").textContent=c[0];
+div.querySelector("small").textContent=c[1];
+
+div.onclick=()=>{
+$("commandInfo").innerHTML=
+"<b>"+c[0]+"</b><br>"+c[1]+
+"<br><code>"+c[2]+"</code>";
+};
+
+$("commandList").appendChild(div);
+});
+}
+
+renderFiles();
+renderCommands();
+
+print("Welcome to Linux Lab.");
+print("Type help to see commands.");
+
+</script>
+</body>
+</html>
